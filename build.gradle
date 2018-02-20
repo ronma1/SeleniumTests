@@ -1,0 +1,58 @@
+import org.gradle.api.logging.configuration.ShowStacktrace
+
+import java.time.Duration
+import java.time.Instant
+
+apply plugin: 'java'
+
+gradle.taskGraph.beforeTask { Task task ->
+    task.ext.setProperty("startTime", Instant.now())
+}
+
+gradle.taskGraph.afterTask { Task task, TaskState state ->
+    println task.name + " took " + Duration.between(task.ext.startTime, Instant.now()).toSeconds() + " seconds"
+}
+
+gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS
+
+repositories {
+    mavenCentral()
+}
+
+ext.seleniumVersion = '3.9.1'
+
+dependencies {
+    testCompile 'org.testng:testng:6.10'
+
+    compile 'org.apache.commons:commons-lang3:3.4'
+    compile 'org.apache.logging.log4j:log4j-core:2.6.2'
+    compile 'org.slf4j:jcl-over-slf4j:1.7.16'
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-firefox-driver', version:seleniumVersion
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-chrome-driver', version:seleniumVersion
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-api', version:seleniumVersion
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version:seleniumVersion
+    compile 'org.slf4j:slf4j-api:1.7.16'
+}
+
+tasks.withType(Test) {
+    //forwarding system variables
+    systemProperties = System.getProperties()
+    useTestNG {
+        testLogging.showStandardStreams = true
+    }
+}
+
+tasks.withType(JavaExec) {
+    //forwarding system variables
+    systemProperties = System.getProperties()
+}
+
+task simpleDriver(type:Test){
+    useTestNG {
+        suites '/src/test/resources/testng.xml'
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.5.1'
+}
